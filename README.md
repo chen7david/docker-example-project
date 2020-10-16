@@ -6,6 +6,15 @@
 version: '3.2'
 
 services:
+    meta-server:
+        build: ./server
+        restart: always
+        container_name: meta-server
+        working_dir: /usr/src/app
+        volumes:
+            - ./public:/usr/src/app/public
+        ports:
+            - "8000:8000"
     nginx-file-server:
         image: nginx:latest
         restart: always
@@ -19,20 +28,25 @@ services:
 ##### Dockerfile - node app
 
 ```yaml
-# build stage
-FROM node:lts-alpine as build-stage
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+FROM node:12
 
-# production stage
-FROM nginx:stable-alpine as production-stage
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-COPY prod_nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Create app directory
+WORKDIR /usr/src/app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
+
+EXPOSE 8000
+CMD [ "node", "src/index.js" ]
 ```
 
 ##### Docker - .dockerignore
